@@ -44,7 +44,7 @@ class ColorStreamHandler(logging.Handler):
 
 		if self.use_colors:
 			msg = self.color(msg, record.levelname)
-		print msg
+		print(msg)
 
 # 'record' has the following attributes:
 # threadName

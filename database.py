@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, Table, Column, Integer, Unicode, Boolean, MetaData, select
-import urlparse
+from urllib.parse import urlparse
 
 DATABASE_NAME = 'data/crawler.sqlite'
 HTML_DIR = 'data/html/'
@@ -37,12 +37,12 @@ class CrawlerDb:
 		res.close()
 		# If we get a result, then this url is not unique
 		if len(result) > 0:
-# 			print 'Duplicated: %s' % url
+# 			print('Duplicated: %s' % url)
 			return False
 
-		args = [{'url':unicode(url)}]
+		args = [{'url':url}]
 		if (emails != None):
-			args = [{'url':unicode(url), 'has_crawled':True, 'emails':unicode(",".join(emails))}]
+			args = [{'url':url, 'has_crawled':True, 'emails':",".join(emails)}]
 		result = self.connection.execute(self.website_table.insert(), args)
 		if result:
 			return True
@@ -64,7 +64,7 @@ class CrawlerDb:
 			# if not delres:
 			# 	return False
 			# Return the row
-			# print result[0].url
+			# print(result[0].url)
 			return result[0]
 		return False
 		
@@ -107,7 +107,7 @@ class CrawlerDb:
 		for result in results:
 			if (result.url == None):
 				continue
-			url = urlparse.urlparse(result.url)
+			url = urlparse(result.url)
 			hostname = url.hostname.split(".")
 			# Simplistic assumeption of a domain. If 2nd last name is <4 char, then it has 3 parts eg. just2us.com.sg
 			hostname = ".".join(len(hostname[-2]) < 4 and hostname[-3:] or hostname[-2:])
@@ -138,7 +138,7 @@ class CrawlerDb:
 		c.crawled(website)
 		website = c.dequeue()
 		c.crawled(website, "a,b")
-		print '---'
+		print('---')
 		c.dequeue()
 	
 	

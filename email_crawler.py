@@ -1,9 +1,17 @@
 from settings import LOGGING
 import logging, logging.config
-import urllib, urllib2
-import re, urlparse
+import re
 import traceback
 from database import CrawlerDb
+import urllib
+from urllib.parse import urlparse
+try:
+    # For Python 3.0 and later
+    from urllib.request import Request, urlopen
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import urlopen
+
 
 # Debugging
 # import pdb;pdb.set_trace()
@@ -50,7 +58,7 @@ def crawl(keywords):
 			Store the HTML
 	"""
 	logger.info("-"*40)
-	logger.info("Keywords to Google for: %s" % keywords.decode('utf-8'))
+	logger.info("Keywords to Google for: %s" % keywords)
 	logger.info("-"*40)
 
 	# Step 1: Crawl Google Page
@@ -59,13 +67,13 @@ def crawl(keywords):
 	# Google search results are paged with 10 urls each. There are also adurls
 	for page_index in range(0, MAX_SEARCH_RESULTS, 10):
 		query = {'q': keywords}
-		url = 'http://www.google.com/search?' + urllib.urlencode(query) + '&start=' + str(page_index)
+		url = 'http://www.google.com/search?' + urllib.parse.urlencode(query) + '&start=' + str(page_index)
 		data = retrieve_html(url)
 		# 	print("data: \n%s" % data)
 		for url in google_url_regex.findall(data):
-			db.enqueue(unicode(url))
+			db.enqueue(url)
 		for url in google_adurl_regex.findall(data):
-			db.enqueue(unicode(url))
+			db.enqueue(url)
 
 	# Step 2: Crawl each of the search result
 	# We search till level 2 deep
@@ -86,25 +94,30 @@ def retrieve_html(url):
 
 	On any error, return.
 	"""
-	req = urllib2.Request(url)
-	req.add_header('User-Agent', 'Just-Crawling 0.1')
+
+	req = Request(url)
+	req.add_header('user-agent', 'testing')
+	req.add_header('Accept-Encoding', '')
+
+
 	request = None
 	status = 0
+	
 	try:
 		logger.info("Crawling %s" % url)
-		request = urllib2.urlopen(req)
-	except urllib2.URLError, e:
+		request = urlopen(req)
+	except urllib.error.URLError as e:
 		logger.error("Exception at url: %s\n%s" % (url, e))
-	except urllib2.HTTPError, e:
+	except urllib.error.HTTPError as e:
 		status = e.code
-	except Exception, e:
+	except Exception as e:
 		return
 	if status == 0:
 		status = 200
 
 	try:
 		data = request.read()
-	except Exception, e:
+	except Exception as e:
 		return
 
 	return str(data)
@@ -156,7 +169,7 @@ def find_links_in_html_with_same_hostname(url, html):
 	"""
 	if (html == None):
 		return set()
-	url = urlparse.urlparse(url)
+	url = urlparse(url)
 	links = url_regex.findall(html)
 	link_set = set()
 	for link in links:
@@ -173,7 +186,7 @@ def find_links_in_html_with_same_hostname(url, html):
 				continue
 			else:
 				link_set.add(urlparse.urljoin(url.geturl(),link))
-		except Exception, e:
+		except Exception as e:
 			pass
 
 	return link_set
@@ -214,6 +227,6 @@ if __name__ == "__main__":
 	except KeyboardInterrupt:
 		logger.error("Stopping (KeyboardInterrupt)")
 		sys.exit()
-	except Exception, e:
+	except Exception as e:
 		logger.error("EXCEPTION: %s " % e)
 		traceback.print_exc()
